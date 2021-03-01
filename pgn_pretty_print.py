@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# Nicholas Ting Jing Kun 
+# Built based on https://github.com/V-Mann-Nick/pgn-pretty-print
+# 2021 version
 
 import argparse
 import os
@@ -14,15 +17,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus.flowables import KeepTogether
 
-# TODO
-# - immprove pdf-return/pdf-file-save
-# - think about error handling
-# - more comments
-
-
 class GamePrinter:
     tile_padding = 0.1  # meaning 10% of width/height of tile is padded
-    piece_images_path = 'app/static/images/piece_images/merida/72/'
+    piece_images_path = 'piece_images/merida/72/'
 
     def __init__(self,
                  pgn,
@@ -56,10 +53,13 @@ class GamePrinter:
         self.col_gap = col_gap
         self.page_layout = page_layout
         self.page_numbering = page_numbering
+        self.styles = getSampleStyleSheet()
         if page_format == 'letter':
             self.page_format = letter
         else:
             self.page_format = A4
+        
+        self.init_reportlab()
 
     def init_reportlab(self, save_to_file=True):
         self.styles = getSampleStyleSheet()
@@ -188,8 +188,10 @@ class GamePrinter:
         elements.append(Paragraph(paragraph, self.styles['Header']))
         # Generate paragraphs with move text and board diagramms
         paragraph = str()
+        mainline_variations = []
         for i, move in enumerate(self.game.mainline()):
-            if move.comment and '<*>' in move.comment or any([i == halfmove for halfmove in self.halfmoves_to_be_printed]):
+            # if move.comment and '<*>' in move.comment or any([i == halfmove for halfmove in self.halfmoves_to_be_printed]):
+            if move.has_variation:
                 elements.append(Paragraph(paragraph, self.styles['Move_Text']))
                 elements.append(KeepTogether(self.board_from_FEN(move.board().fen())))
                 paragraph = str()
@@ -198,6 +200,8 @@ class GamePrinter:
                 paragraph += '<strong>{}...</strong> {} '.format(int((i + 2) / 2), self.print_move_and_variations(move, i).replace('<*>', '').strip())
             else:
                 paragraph += self.print_move_and_variations(move, i).replace('<*>', '').strip() + ' '
+        
+
         elements.append(Paragraph(paragraph, self.styles['Move_Text']))
         self.doc.build(elements)
 
